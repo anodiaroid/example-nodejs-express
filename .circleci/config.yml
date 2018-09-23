@@ -27,11 +27,21 @@ jobs:
           - v1-dependencies-
 
       - run: npm install
-
+      - setup_remote_docker
       - save_cache:
           paths:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
+
+      - run: docker login -u $DOCKER_USERNAME -p DOCKER_PASSWORD
+      - run: 
+          name: "Build docker image and push to docker hub"
+          command: 
+              cp Dockerfile.Staging Dockerfile
+              docker build -t anodiaroid/example-nodejs-circle:latest
+              docker build -t anodiaroid/example-nodejs-circle:${CIRCLE_SHA1}
+              docker push anodiaroid/example-nodejs-circle:latest
+              docker push anodiaroid/example-nodejs-circle:${CIRCLE_SHA1}
       - run: echo Done
       # run tests!
       #- run: yarn test
