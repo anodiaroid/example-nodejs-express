@@ -39,9 +39,7 @@ jobs:
           command: 
               cp Dockerfile.Staging Dockerfile
               docker build -t anodiaroid/example-nodejs-circle:latest
-              docker build -t anodiaroid/example-nodejs-circle:${CIRCLE_SHA1}
               docker push anodiaroid/example-nodejs-circle:latest
-              docker push anodiaroid/example-nodejs-circle:${CIRCLE_SHA1}
       - run: echo Done
       # run tests!
       #- run: yarn test
