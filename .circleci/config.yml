@@ -6,14 +6,7 @@ version: 2
 jobs:
   build:
     docker:
-      # specify the version you desire here
       - image: circleci/node:8.11.1-stretch
-      
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/mongo:3.4.4
-
     working_directory: ~/repo
 
     steps:
@@ -25,14 +18,46 @@ jobs:
           - v1-dependencies-{{ checksum "package.json" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
-
       - run: npm install
-      - setup_remote_docker
+      - save_cache:
+          paths:
+              -node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+      #- run: echo Done
+      # run tests!
+      #- run: yarn test
+  test:
+     docker:
+      - image: circleci/node:8.11.1-stretch
+    working_directory: ~/repo  
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package.json" }}
+            - v1-dependencies-
+      - run: npm install
       - save_cache:
           paths:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
-
+  ship:
+    docker:
+      - image: circleci/node:8.11.1-stretch
+    working_directory: ~/repo  
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package.json" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+      - run: npm install
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+      - setup_remote_docker
       - run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       - run: 
           name: "Build docker image and push to docker hub"
@@ -42,6 +67,12 @@ jobs:
               docker build -t anodiaroid/example-nodejs-circle:${CIRCLE_SHA1} .
               docker push anodiaroid/example-nodejs-circle:latest
               docker push anodiaroid/example-nodejs-circle:${CIRCLE_SHA1}
+  deploy:
+    docker:
+      - image: circleci/node:8.11.1-stretch
+    working_directory: ~/repo  
+    steps:
+      - setup_remote_docker
       - run:
           name: "Call to rancher to deploy"
           command: |
@@ -55,5 +86,23 @@ jobs:
               --auto_complete --timeout 600 \
               /
       - run: echo Done
-      # run tests!
-      #- run: yarn test
+workflows:
+  version: 2
+  build_test_ship_deploy:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+      - ship:
+          requires:
+            - build
+            - test
+      - deploy:
+          type: approval
+          requires:
+            - build
+            - test
+            - ship
+
+    
