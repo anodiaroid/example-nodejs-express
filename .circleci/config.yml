@@ -38,10 +38,8 @@ jobs:
           name: "Build docker image and push to docker hub"
           command: 
               cp Dockerfile.Staging Dockerfile
-              docker build -t anodiaroid/example-nodejs-circle:latest
-              docker build -t anodiaroid/example-nodejs-circle:${CIRCLE_SHA1}
-              docker push anodiaroid/example-nodejs-circle:latest
-              docker push anodiaroid/example-nodejs-circle:${CIRCLE_SHA1}
+              docker build -t anodiaroid/example-nodejs-circle
+              docker push anodiaroid/example-nodejs-circle
       - run: echo Done
       # run tests!
       #- run: yarn test
